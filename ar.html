@@ -192,10 +192,10 @@
                     for (let x = 0; x < width - regionSize; x += step) {
                         const contrast = calculateContrast(data, x, y, regionSize, width);
                         
-                        if (contrast > 80) { // Alto contraste = posible forma
+                        if (contrast > 120) { // Contraste más alto para mayor precisión
                             const shapeScore = analyzeShapeInRegion(data, x, y, regionSize, width);
                             
-                            if (shapeScore > 0.3) {
+                            if (shapeScore > 0.45) { // Umbral más alto
                                 detections.push({
                                     x: x,
                                     y: y,
@@ -227,7 +227,7 @@
                     for (let x = 0; x < width - regionSize; x += step) {
                         const edgeScore = calculateEdgeScore(data, x, y, regionSize, width);
                         
-                        if (edgeScore > 0.4) {
+                        if (edgeScore > 0.6) { // Umbral más alto para bordes
                             detections.push({
                                 x: x,
                                 y: y,
@@ -260,7 +260,7 @@
                         for (let x = 0; x < width - size; x += step) {
                             const lScore = analyzeLPattern(data, x, y, size, width);
                             
-                            if (lScore > 0.35) {
+                            if (lScore > 0.55) { // Umbral más estricto para forma L
                                 detections.push({
                                     x: x,
                                     y: y,
@@ -379,7 +379,7 @@
             // Filtrar y combinar detecciones de múltiples métodos
             function filterAndMergeDetections(detections) {
                 const filtered = [];
-                const minDistance = 50;
+                const minDistance = 100; // Aumentado para evitar duplicados
                 
                 // Ordenar por confianza
                 detections.sort((a, b) => b.confidence - a.confidence);
@@ -394,23 +394,78 @@
                         );
                         
                         if (distance < minDistance) {
-                            // Si está muy cerca, combinar información
+                            // Si está muy cerca, tomar la mejor detección
                             if (detection.confidence > existing.confidence) {
+                                // Reemplazar con mejor detección
                                 existing.x = detection.x;
                                 existing.y = detection.y;
+                                existing.width = detection.width;
+                                existing.height = detection.height;
                                 existing.confidence = detection.confidence;
+                                existing.method = detection.method;
                             }
                             shouldAdd = false;
                             break;
                         }
                     }
                     
-                    if (shouldAdd && detection.confidence > 0.3) {
+                    // Solo agregar detecciones con alta confianza
+                    if (shouldAdd && detection.confidence > 0.5) {
                         filtered.push(detection);
                     }
                 }
                 
-                return filtered.slice(0, 3);
+                // Filtrar adicional por región de superposición
+                return filterOverlappingRegions(filtered);
+            }
+            
+            // Filtro adicional para regiones superpuestas
+            function filterOverlappingRegions(detections) {
+                const result = [];
+                
+                for (let i = 0; i < detections.length; i++) {
+                    const det1 = detections[i];
+                    let isOverlapping = false;
+                    
+                    for (let j = 0; j < result.length; j++) {
+                        const det2 = result[j];
+                        
+                        // Calcular área de superposición
+                        const overlapArea = calculateOverlapArea(det1, det2);
+                        const area1 = det1.width * det1.height;
+                        const area2 = det2.width * det2.height;
+                        const minArea = Math.min(area1, area2);
+                        
+                        // Si se superponen más del 30%, son la misma forma
+                        if (overlapArea / minArea > 0.3) {
+                            isOverlapping = true;
+                            // Mantener la de mayor confianza
+                            if (det1.confidence > det2.confidence) {
+                                result[j] = det1;
+                            }
+                            break;
+                        }
+                    }
+                    
+                    if (!isOverlapping) {
+                        result.push(det1);
+                    }
+                }
+                
+                return result.slice(0, 1); // Solo la mejor detección
+            }
+            
+            // Calcular área de superposición entre dos detecciones
+            function calculateOverlapArea(det1, det2) {
+                const x1 = Math.max(det1.x, det2.x);
+                const y1 = Math.max(det1.y, det2.y);
+                const x2 = Math.min(det1.x + det1.width, det2.x + det2.width);
+                const y2 = Math.min(det1.y + det1.height, det2.y + det2.height);
+                
+                if (x1 < x2 && y1 < y2) {
+                    return (x2 - x1) * (y2 - y1);
+                }
+                return 0;
             }
             
             // Sistema de tracking con suavizado
@@ -487,8 +542,8 @@
             // Mostrar formas rastreadas
             function displayTrackedShapes() {
                 trackedShapes.forEach(shape => {
-                    // Solo mostrar formas estables (vistas al menos 3 frames)
-                    if (shape.frameCount >= 3 && shape.confidence > 0.25) {
+                // Solo mostrar formas muy estables y confiables
+                if (shape.frameCount >= 5 && shape.confidence > 0.5) {
                         showTrackedShapeAt(shape);
                     }
                 });
