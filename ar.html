@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realidad Aumentada - Detector de Formas</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="ar-styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#764ba2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <script src="https://docs.opencv.org/4.7.0/opencv.js"></script>
+</head>
+<body class="ar-body">
+    <div class="ar-container">
+        <header class="ar-header">
+            <h1>🌟 Realidad Aumentada</h1>
+            <button id="backBtn" class="btn-back">← Volver</button>
+        </header>
+
+        <div class="camera-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+            <div class="ar-overlay" id="arOverlay"></div>
+        </div>
+
+        <div class="controls-ar">
+            <button id="startAR" class="btn-primary">Iniciar Cámara AR</button>
+            <button id="stopAR" class="btn-secondary" style="display: none;">Detener AR</button>
+            <div class="shape-selector">
+                <label>Forma objetivo:</label>
+                <select id="shapeSelect">
+                    <option value="circle">Círculo</option>
+                    <option value="square">Cuadrado</option>
+                    <option value="triangle">Triángulo</option>
+                    <option value="rectangle">Rectángulo</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <h3>🎯 Formas Detectadas:</h3>
+            <div id="detectionInfo" class="detection-info">
+                <p>Apunta la cámara hacia formas geométricas...</p>
+            </div>
+        </div>
+
+        <div class="instructions-ar">
+            <h3>📋 Instrucciones:</h3>
+            <ul>
+                <li>Presiona "Iniciar Cámara AR"</li>
+                <li>Apunta hacia objetos con formas geométricas</li>
+                <li>La información aparecerá flotando sobre las formas detectadas</li>
+                <li>Cambia el tipo de forma en el selector para diferentes detecciones</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Plantillas de información para cada forma -->
+    <template id="circleInfo">
+        <div class="ar-info-card circle-info">
+            <h4>🔵 Círculo Detectado</h4>
+            <p><strong>Área:</strong> <span class="area-value"></span></p>
+            <p><strong>Radio aproximado:</strong> <span class="radius-value"></span></p>
+            <p><strong>Característica:</strong> Forma perfectamente simétrica</p>
+            <div class="info-details">
+                <small>Los círculos representan perfección y continuidad en el diseño</small>
+            </div>
+        </div>
+    </template>
+
+    <template id="squareInfo">
+        <div class="ar-info-card square-info">
+            <h4>🟩 Cuadrado Detectado</h4>
+            <p><strong>Área:</strong> <span class="area-value"></span></p>
+            <p><strong>Lado aproximado:</strong> <span class="side-value"></span></p>
+            <p><strong>Característica:</strong> Cuatro lados iguales</p>
+            <div class="info-details">
+                <small>Los cuadrados simbolizan estabilidad y equilibrio</small>
+            </div>
+        </div>
+    </template>
+
+    <template id="triangleInfo">
+        <div class="ar-info-card triangle-info">
+            <h4>🔺 Triángulo Detectado</h4>
+            <p><strong>Área:</strong> <span class="area-value"></span></p>
+            <p><strong>Perímetro:</strong> <span class="perimeter-value"></span></p>
+            <p><strong>Característica:</strong> Tres vértices</p>
+            <div class="info-details">
+                <small>Los triángulos representan dirección y movimiento</small>
+            </div>
+        </div>
+    </template>
+
+    <template id="rectangleInfo">
+        <div class="ar-info-card rectangle-info">
+            <h4>🟦 Rectángulo Detectado</h4>
+            <p><strong>Área:</strong> <span class="area-value"></span></p>
+            <p><strong>Dimensiones:</strong> <span class="dimensions-value"></span></p>
+            <p><strong>Característica:</strong> Cuatro ángulos rectos</p>
+            <div class="info-details">
+                <small>Los rectángulos proporcionan estructura y organización</small>
+            </div>
+        </div>
+    </template>
+
+    <script src="ar-detector.js"></script>
+</body>
+</html>

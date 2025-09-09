@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realidad Aumentada - Escaner QR</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#764ba2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Escáner QR para Realidad Aumentada</h1>
+            <p>Escanea el código QR para acceder a la experiencia AR</p>
+        </header>
+
+        <main class="scanner-container">
+            <div class="scanner-wrapper">
+                <video id="video" autoplay playsinline></video>
+                <div class="scanner-overlay">
+                    <div class="scanner-frame"></div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="startScan" class="btn-primary">Iniciar Escáner</button>
+                <button id="stopScan" class="btn-secondary" style="display: none;">Detener Escáner</button>
+            </div>
+
+            <div id="result" class="result-container" style="display: none;">
+                <h3>¡Código QR Detectado!</h3>
+                <p id="qr-data"></p>
+                <button id="goToAR" class="btn-ar">Ir a Realidad Aumentada</button>
+            </div>
+
+            <div class="instructions">
+                <h3>Instrucciones:</h3>
+                <ol>
+                    <li>Presiona "Iniciar Escáner"</li>
+                    <li>Permite el acceso a la cámara</li>
+                    <li>Apunta hacia el código QR</li>
+                    <li>Una vez detectado, serás dirigido a la experiencia AR</li>
+                </ol>
+            </div>
+        </main>
+
+        <!-- Generador de QR para pruebas -->
+        <section class="qr-generator">
+            <h3>🎯 Código QR de Prueba</h3>
+            <p>Escanea este código QR para acceder a la realidad aumentada:</p>
+            <div id="qrcode"></div>
+            <p class="qr-info">Este QR te llevará directamente a la experiencia AR</p>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="qr-scanner.js"></script>
+</body>
+</html>

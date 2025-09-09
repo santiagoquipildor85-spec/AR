@@ -1,0 +1,41 @@
+{
+  "name": "Realidad Aumentada - Detector de Formas",
+  "short_name": "AR Detector",
+  "description": "Aplicación de realidad aumentada con escáner QR y detección de formas",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#667eea",
+  "theme_color": "#764ba2",
+  "orientation": "portrait-primary",
+  "scope": "./",
+  "lang": "es",
+  "categories": ["productivity", "utilities", "education"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDIwIDIwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0iI2ZmZiIgeD0iMiIgeT0iMiI+CjxwYXRoIGQ9Ik04IDJhNiA2IDAgMSAwIDYgNkE2IDYgMCAwIDAgOCAyem0wIDEwYTQgNCAwIDEgMSA0LTQgNCA0IDAgMCAxLTQgNHoiLz4KPHN2Zz4KPHN2Zz4=",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDIwIDIwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIGZpbGw9IiM2NjdlZWEiLz4KPHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0iI2ZmZiIgeD0iMiIgeT0iMiI+CjxwYXRoIGQ9Ik04IDJhNiA2IDAgMSAwIDYgNkE2IDYgMCAwIDAgOCAyem0wIDEwYTQgNCAwIDEgMSA0LTQgNCA0IDAgMCAxLTQgNHoiLz4KPHN2Zz4KPHN2Zz4=",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjU2OCIgdmlld0JveD0iMCAwIDMyMCA1NjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iNTY4IiBmaWxsPSIjZjhmOWZhIi8+Cjx0ZXh0IHg9IjE2MCIgeT0iMjg0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMzMzIj5Fc2PDsW5lciBRUjwvdGV4dD4KPHN2Zz4=",
+      "sizes": "320x568",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
+  "features": [
+    "Cross Platform",
+    "fast",
+    "simple"
+  ],
+  "permissions": [
+    "camera"
+  ]
+}

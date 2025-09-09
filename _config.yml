@@ -1,0 +1,35 @@
+# Configuración para GitHub Pages
+title: "Realidad Aumentada - Detector de Formas"
+description: "Aplicación web de realidad aumentada con escáner QR y detección de formas geométricas"
+url: "https://tu-usuario.github.io"
+baseurl: "/realidad-aumentada"
+
+# Configuración del sitio
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+# Configuración de archivos
+include:
+  - "*.html"
+  - "*.css"
+  - "*.js"
+  - "*.md"
+
+exclude:
+  - README.md
+  - LICENSE
+  - .gitignore
+
+# Configuración de GitHub Pages
+github:
+  repository_url: "https://github.com/tu-usuario/realidad-aumentada"
+
+# Metadatos
+author: "Tu Nombre"
+email: "tu-email@ejemplo.com"
+
+# Configuración para PWA (opcional)
+lang: "es"
+timezone: "America/Mexico_City"
