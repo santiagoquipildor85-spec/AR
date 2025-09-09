@@ -71,9 +71,9 @@ class ARShapeDetector {
     }
     
     setupCanvas() {
-        // Ajustar canvas a pantalla completa
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        // Ajustar canvas al video para evitar zoom
+        this.canvas.width = this.video.videoWidth || 1280;
+        this.canvas.height = this.video.videoHeight || 720;
         this.canvas.style.width = '100%';
         this.canvas.style.height = '100%';
     }
@@ -111,8 +111,8 @@ class ARShapeDetector {
             this.stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode: 'environment', // Cámara trasera
-                    width: { ideal: window.innerWidth },
-                    height: { ideal: window.innerHeight }
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
                 }
             });
             
@@ -121,10 +121,13 @@ class ARShapeDetector {
             
             // Esperar a que el video esté listo
             this.video.addEventListener('loadedmetadata', () => {
-                this.setupCanvas();
-                this.isRunning = true;
-                this.detectShapes();
-                this.updateStatus('Buscando formas...', 'active');
+                // Esperar un poco para que el video esté completamente cargado
+                setTimeout(() => {
+                    this.setupCanvas();
+                    this.isRunning = true;
+                    this.detectShapes();
+                    this.updateStatus('Buscando formas...', 'active');
+                }, 500);
             });
             
             console.log('AR iniciado');
@@ -158,7 +161,8 @@ class ARShapeDetector {
         this.updateStatus('Toca para iniciar', 'ready');
         console.log('AR detenido');
     }
-        detectShapes() {
+    
+    detectShapes() {
         if (!this.isRunning || !this.video.videoWidth) {
             return;
         }
@@ -221,7 +225,7 @@ class ARShapeDetector {
         return detections.slice(0, 3); // Máximo 3 detecciones
     }
     
-    basicShapeDetection(imageData) {
+    basicShapeDetection(imageData, targetShape) {
         const detections = [];
         const data = imageData.data;
         const width = imageData.width;
@@ -244,9 +248,7 @@ class ARShapeDetector {
                     // Verificar si hay suficiente contraste alrededor
                     const hasContrast = this.checkContrast(data, x, y, width, height);
                     if (hasContrast && Math.random() > 0.95) { // Reducir falsas detecciones
-                        const shapes = ['circle', 'square', 'triangle', 'rectangle'];
-                        const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
-                        regions.push({ x, y, type: randomShape });
+                        regions.push({ x, y, type: targetShape });
                     }
                 }
             }
@@ -308,6 +310,7 @@ class ARShapeDetector {
             simulated: true
         };
     }
+    
     displayDetections(detections) {
         detections.forEach((detection, index) => {
             this.drawDetectionIndicator(detection);
@@ -412,8 +415,8 @@ async function requestWakeLock() {
 
 // Activar wake lock cuando se inicie AR
 document.addEventListener('DOMContentLoaded', () => {
-    const statusIndicator = document.getElementById('statusIndicator');
-    if (statusIndicator) {
-        statusIndicator.addEventListener('click', requestWakeLock);
+    const startBtn = document.getElementById('startAR');
+    if (startBtn) {
+        startBtn.addEventListener('click', requestWakeLock);
     }
 });
