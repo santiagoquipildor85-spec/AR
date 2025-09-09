@@ -1,48 +1,68 @@
 /* Estilos específicos para la página AR */
 .ar-body {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-    overflow-x: hidden;
-}
-
-.ar-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
-    position: relative;
-}
-
-.ar-header {
-    text-align: center;
-    margin-bottom: 2rem;
-    position: relative;
-}
-
-.ar-header h1 {
-    color: white;
-    font-size: 2.5rem;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    margin-bottom: 0.5rem;
-}
-
-/* Contenedor de cámara */
-.camera-container {
-    position: relative;
-    max-width: 800px;
-    margin: 0 auto 2rem;
-    border-radius: 20px;
+    background: #000;
     overflow: hidden;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+}
+
+.ar-container-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+    overflow: hidden;
+}
+
+/* Botón de cerrar minimalista */
+.btn-close {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-close:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+/* Contenedor de cámara fullscreen */
+.camera-fullscreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: #000;
 }
 
-.camera-container #video {
+.camera-fullscreen #video {
     width: 100%;
-    height: 400px;
+    height: 100%;
     object-fit: cover;
     display: block;
 }
 
-.camera-container #canvas {
+.camera-fullscreen #canvas {
     position: absolute;
     top: 0;
     left: 0;
@@ -60,6 +80,56 @@
     height: 100%;
     pointer-events: none;
     z-index: 3;
+}
+
+/* Indicador de estado minimalista */
+.status-indicator {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    padding: 15px 25px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 999;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.status-indicator:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: translateX(-50%) scale(1.05);
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ff4444;
+    animation: pulse-status 2s infinite;
+}
+
+.status-dot.active {
+    background: #44ff44;
+}
+
+.status-dot.detecting {
+    background: #ffaa44;
+}
+
+@keyframes pulse-status {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.2); }
+}
+
+#statusText {
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 /* Controles AR */
@@ -121,17 +191,17 @@
     border-left: 4px solid #667eea;
 }
 
-/* Cards de información AR flotantes */
+/* Cards de información AR flotantes - minimalistas */
 .ar-info-card {
     position: absolute;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
-    border-radius: 12px;
-    padding: 15px;
-    max-width: 250px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-    border: 2px solid;
-    animation: fadeInFloat 0.5s ease-out;
+    border-radius: 8px;
+    padding: 8px 12px;
+    max-width: 150px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: fadeInFloat 0.3s ease-out;
     z-index: 10;
     pointer-events: none;
 }
@@ -149,49 +219,37 @@
 
 .circle-info {
     border-color: #007bff;
-    background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(255, 255, 255, 0.95));
 }
 
 .square-info {
     border-color: #28a745;
-    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(255, 255, 255, 0.95));
 }
 
 .triangle-info {
     border-color: #ffc107;
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 255, 255, 0.95));
 }
 
 .rectangle-info {
     border-color: #6f42c1;
-    background: linear-gradient(135deg, rgba(111, 66, 193, 0.1), rgba(255, 255, 255, 0.95));
 }
 
 .ar-info-card h4 {
-    margin-bottom: 10px;
-    font-size: 1.1rem;
-    color: #333;
+    margin: 0;
+    font-size: 0.9rem;
+    color: white;
+    font-weight: 600;
 }
 
 .ar-info-card p {
-    margin-bottom: 5px;
-    font-size: 0.9rem;
-    color: #555;
+    display: none; /* Ocultar detalles para interfaz minimalista */
 }
 
 .ar-info-card strong {
-    color: #333;
+    color: white;
 }
 
 .info-details {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #eee;
-}
-
-.info-details small {
-    color: #666;
-    font-style: italic;
+    display: none; /* Ocultar detalles para interfaz minimalista */
 }
 
 /* Indicadores de detección */
