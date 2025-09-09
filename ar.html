@@ -1,15 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realidad Aumentada - Detector de Formas</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="ar-styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#764ba2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head>
+<body class="ar-body">
+    <div class="ar-container-fullscreen">
+        <!-- Botón de cerrar minimalista -->
+        <button id="backBtn" class="btn-close">×</button>
+        
+        <!-- Cámara fullscreen -->
+        <div class="camera-fullscreen">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+            <div class="ar-overlay" id="arOverlay"></div>
+        </div>
+
+        <!-- Indicador de estado minimalista -->
+        <div class="status-indicator" id="statusIndicator">
+            <div class="status-dot"></div>
+            <span id="statusText">Toca para iniciar</span>
+        </div>
+    </div>
+
     <script>
-        // Inicializar sistema completo
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Inicializando sistema AR...');
+        // Sistema AR simplificado y funcional
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Inicializando AR...');
             
-            // Variables globales
-            let detector = null;
+            // Variables
             let isRunning = false;
             let stream = null;
             let animationId = null;
             
-            // Elementos DOM
+            // Elementos
             const video = document.getElementById('video');
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
@@ -19,8 +50,8 @@
             const statusDot = document.querySelector('.status-dot');
             const backBtn = document.getElementById('backBtn');
             
-            // Funciones auxiliares
-            function updateStatus(text, state = 'ready') {
+            // Función para actualizar estado
+            function updateStatus(text, state) {
                 if (statusText) statusText.textContent = text;
                 if (statusDot) {
                     statusDot.className = 'status-dot';
@@ -29,29 +60,81 @@
                 }
             }
             
-            function clearAROverlay() {
-                if (arOverlay) {
-                    while (arOverlay.firstChild) {
-                        arOverlay.removeChild(arOverlay.firstChild);
-                    }
+            // Configurar canvas
+            function setupCanvas() {
+                if (video.videoWidth && video.videoHeight) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.style.width = '100%';
+                    canvas.style.height = '100%';
                 }
             }
             
-            function setupCanvas() {
-                canvas.width = video.videoWidth || 1280;
-                canvas.height = video.videoHeight || 720;
-                canvas.style.width = '100%';
-                canvas.style.height = '100%';
+            // Limpiar overlay
+            function clearOverlay() {
+                while (arOverlay.firstChild) {
+                    arOverlay.removeChild(arOverlay.firstChild);
+                }
+            }
+            
+            // Mostrar detección de prueba
+            function showDetection() {
+                const card = document.createElement('div');
+                card.style.position = 'absolute';
+                card.style.left = '50%';
+                card.style.top = '30%';
+                card.style.transform = 'translateX(-50%)';
+                card.style.background = 'rgba(46, 204, 113, 0.9)';
+                card.style.color = 'white';
+                card.style.padding = '12px 16px';
+                card.style.borderRadius = '8px';
+                card.style.fontFamily = 'Arial, sans-serif';
+                card.style.zIndex = '10';
+                card.style.textAlign = 'center';
+                card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+                
+                card.innerHTML = '<div style="font-weight: bold; margin-bottom: 2px;">👋 Hola</div><div style="font-size: 12px;">DAyE 2025 Expo</div>';
+                
+                arOverlay.appendChild(card);
+                
+                setTimeout(function() {
+                    if (card.parentNode) {
+                        card.parentNode.removeChild(card);
+                    }
+                }, 3000);
+                
+                updateStatus('¡Detectado!', 'detecting');
+            }
+            
+            // Loop de detección
+            function detectLoop() {
+                if (!isRunning) return;
+                
+                try {
+                    if (video.videoWidth > 0) {
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        // Simulación de detección cada 5 segundos aprox
+                        if (Math.random() > 0.995) {
+                            showDetection();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+                
+                if (isRunning) {
+                    animationId = requestAnimationFrame(detectLoop);
+                }
             }
             
             // Iniciar AR
             async function startAR() {
                 try {
-                    updateStatus('Iniciando cámara...', 'detecting');
-                    console.log('Solicitando acceso a cámara...');
+                    updateStatus('Iniciando...', 'detecting');
                     
                     stream = await navigator.mediaDevices.getUserMedia({
-                        video: {
+                        video: { 
                             facingMode: 'environment',
                             width: { ideal: 1280 },
                             height: { ideal: 720 }
@@ -59,21 +142,17 @@
                     });
                     
                     video.srcObject = stream;
-                    video.play();
                     
-                    video.addEventListener('loadedmetadata', () => {
-                        setTimeout(() => {
-                            setupCanvas();
-                            isRunning = true;
-                            updateStatus('Detectando...', 'active');
-                            detectLoop();
-                            console.log('AR iniciado correctamente');
-                        }, 500);
-                    });
+                    video.onloadedmetadata = function() {
+                        setupCanvas();
+                        isRunning = true;
+                        updateStatus('Detectando...', 'active');
+                        detectLoop();
+                    };
                     
                 } catch (error) {
-                    console.error('Error al iniciar AR:', error);
-                    updateStatus('Error: ' + error.message, 'ready');
+                    console.error('Error:', error);
+                    updateStatus('Error de cámara', 'ready');
                 }
             }
             
@@ -83,7 +162,6 @@
                 
                 if (animationId) {
                     cancelAnimationFrame(animationId);
-                    animationId = null;
                 }
                 
                 if (stream) {
@@ -95,9 +173,8 @@
                     video.srcObject = null;
                 }
                 
-                clearAROverlay();
+                clearOverlay();
                 updateStatus('Toca para iniciar', 'ready');
-                console.log('AR detenido');
             }
             
             // Toggle AR
@@ -109,143 +186,17 @@
                 }
             }
             
-            // Loop de detección simplificado
-            function detectLoop() {
-                if (!isRunning || !video.videoWidth) {
-                    return;
-                }
-                
-                try {
-                    // Dibujar frame
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    
-                    // Detección simulada para pruebas
-                    if (Math.random() > 0.97) {
-                        showTestDetection();
-                    }
-                    
-                } catch (error) {
-                    console.error('Error en detección:', error);
-                }
-                
-                if (isRunning) {
-                    animationId = requestAnimationFrame(detectLoop);
-                }
-            }
-            
-            // Mostrar detección de prueba
-            function showTestDetection() {
-                const testCard = document.createElement('div');
-                testCard.style.cssText = `
-                    position: absolute;
-                    left: 50%;
-                    top: 30%;
-                    transform: translateX(-50%);
-                    background: #2ecc71dd;
-                    color: white;
-                    padding: 12px 16px;
-                    border-radius: 8px;
-                    font-family: 'Segoe UI', Arial, sans-serif;
-                    pointer-events: none;
-                    z-index: 10;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-                    text-align: center;
-                `;
-                
-                testCard.innerHTML = `
-                    <div style="margin-bottom: 2px;">
-                        <span style="margin-right: 6px; font-size: 16px;">👋</span>
-                        <span style="font-weight: bold; font-size: 16px;">Hola</span>
-                    </div>
-                    <div style="font-size: 12px; opacity: 0.9; font-weight: normal;">
-                        DAyE 2025 Expo
-                    </div>
-                `;
-                
-                arOverlay.appendChild(testCard);
-                
-                // Remover después de 3 segundos
-                setTimeout(() => {
-                    if (testCard.parentNode) {
-                        testCard.parentNode.removeChild(testCard);
-                    }
-                }, 3000);
-                
-                updateStatus('¡Imagen detectada!', 'detecting');
-            }
-            
             // Event listeners
-            if (statusIndicator) {
-                statusIndicator.addEventListener('click', toggleAR);
-                console.log('Event listener agregado al indicador');
-            }
+            statusIndicator.addEventListener('click', toggleAR);
             
-            if (backBtn) {
-                backBtn.addEventListener('click', () => {
-                    stopAR();
-                    window.location.href = 'index.html';
-                });
-            }
+            backBtn.addEventListener('click', function() {
+                stopAR();
+                window.location.href = 'index.html';
+            });
             
             // Configuración inicial
             updateStatus('Toca para iniciar', 'ready');
-            console.log('Sistema AR inicializado correctamente');
-        });
-    </script>          const testCard = document.createElement('div');
-                testCard.style.cssText = `
-                    position: absolute;
-                    left: 50%;
-                    top: 30%;
-                    transform: translateX(-50%);
-                    background: #2ecc71dd;
-                    color: white;
-                    padding: 12px 16px;
-                    border-radius: 8px;
-                    font-family: 'Segoe UI', Arial, sans-serif;
-                    pointer-events: none;
-                    z-index: 10;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-                    text-align: center;
-                `;
-                
-                testCard.innerHTML = `
-                    <div style="margin-bottom: 2px;">
-                        <span style="margin-right: 6px; font-size: 16px;">👋</span>
-                        <span style="font-weight: bold; font-size: 16px;">Hola</span>
-                    </div>
-                    <div style="font-size: 12px; opacity: 0.9; font-weight: normal;">
-                        DAyE 2025 Expo
-                    </div>
-                `;
-                
-                arOverlay.appendChild(testCard);
-                
-                // Remover después de 3 segundos
-                setTimeout(() => {
-                    if (testCard.parentNode) {
-                        testCard.parentNode.removeChild(testCard);
-                    }
-                }, 3000);
-                
-                updateStatus('¡Imagen detectada!', 'detecting');
-            }
-            
-            // Event listeners
-            if (statusIndicator) {
-                statusIndicator.addEventListener('click', toggleAR);
-                console.log('Event listener agregado al indicador');
-            }
-            
-            if (backBtn) {
-                backBtn.addEventListener('click', () => {
-                    stopAR();
-                    window.location.href = 'index.html';
-                });
-            }
-            
-            // Configuración inicial
-            updateStatus('Toca para iniciar', 'ready');
-            console.log('Sistema AR inicializado correctamente');
+            console.log('AR listo');
         });
     </script>
 </body>
