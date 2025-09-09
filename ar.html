@@ -122,7 +122,11 @@
                 arOverlay.appendChild(card);
             }
             
-            // Loop de detección real
+            // Sistema de tracking para seguir formas
+            let trackedShapes = new Map();
+            let shapeIdCounter = 0;
+            
+            // Loop de detección mejorado con tracking
             function detectLoop() {
                 if (!isRunning) return;
                 
@@ -130,21 +134,22 @@
                     if (video.videoWidth > 0) {
                         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                         
-                        // Detectar forma L real
+                        // Detectar forma L con múltiples métodos
                         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        const detections = detectLShape(imageData);
+                        const detections = detectShapeMultiMethod(imageData);
                         
-                        // Limpiar detecciones anteriores
+                        // Actualizar tracking
+                        updateTracking(detections);
+                        
+                        // Limpiar y mostrar
                         clearOverlay();
+                        displayTrackedShapes();
                         
-                        // Mostrar detecciones encontradas
-                        if (detections.length > 0) {
-                            detections.forEach(detection => {
-                                showDetectionAt(detection.x, detection.y, detection.width, detection.height);
-                            });
-                            updateStatus('¡Forma L detectada!', 'detecting');
+                        // Actualizar estado
+                        if (trackedShapes.size > 0) {
+                            updateStatus(`${trackedShapes.size} forma(s) detectada(s)`, 'detecting');
                         } else {
-                            updateStatus('Buscando forma L...', 'active');
+                            updateStatus('Buscando formas...', 'active');
                         }
                     }
                 } catch (error) {
@@ -156,103 +161,231 @@
                 }
             }
             
-            // Detectar forma L específica
-            function detectLShape(imageData) {
+            // Detección múltiple para mejor precisión
+            function detectShapeMultiMethod(imageData) {
+                const detections = [];
+                
+                // Método 1: Detección de contraste alto
+                detections.push(...detectByContrast(imageData));
+                
+                // Método 2: Detección por bordes
+                detections.push(...detectByEdges(imageData));
+                
+                // Método 3: Detección por forma específica
+                detections.push(...detectLShapeImproved(imageData));
+                
+                // Filtrar y combinar resultados
+                return filterAndMergeDetections(detections);
+            }
+            
+            // Método 1: Detección por contraste alto
+            function detectByContrast(imageData) {
                 const detections = [];
                 const data = imageData.data;
                 const width = imageData.width;
                 const height = imageData.height;
                 
-                // Convertir a escala de grises y binarizar
-                const gray = new Uint8Array(width * height);
-                for (let i = 0; i < data.length; i += 4) {
-                    const r = data[i];
-                    const g = data[i + 1];
-                    const b = data[i + 2];
-                    const grayscale = (r + g + b) / 3;
-                    gray[i / 4] = grayscale > 128 ? 255 : 0; // Umbral para blanco/negro
-                }
+                const step = 15;
+                const regionSize = 60;
                 
-                // Buscar regiones blancas (forma L)
-                const step = 20; // Reducir carga computacional
-                for (let y = step; y < height - 100; y += step) {
-                    for (let x = step; x < width - 100; x += step) {
-                        const region = analyzeRegion(gray, width, height, x, y, 80, 80);
-                        if (region.isLShape) {
-                            detections.push({
-                                x: x,
-                                y: y,
-                                width: 80,
-                                height: 80,
-                                confidence: region.confidence
-                            });
-                        }
-                    }
-                }
-                
-                // Filtrar detecciones superpuestas
-                return filterOverlapping(detections);
-            }
-            
-            // Analizar región específica para forma L
-            function analyzeRegion(gray, width, height, startX, startY, regionWidth, regionHeight) {
-                let whitePixels = 0;
-                let totalPixels = 0;
-                let lPattern = 0;
-                
-                // Analizar patrón de la región
-                for (let y = 0; y < regionHeight; y += 4) {
-                    for (let x = 0; x < regionWidth; x += 4) {
-                        const pixelX = startX + x;
-                        const pixelY = startY + y;
+                for (let y = 0; y < height - regionSize; y += step) {
+                    for (let x = 0; x < width - regionSize; x += step) {
+                        const contrast = calculateContrast(data, x, y, regionSize, width);
                         
-                        if (pixelX < width && pixelY < height) {
-                            const index = pixelY * width + pixelX;
-                            totalPixels++;
+                        if (contrast > 80) { // Alto contraste = posible forma
+                            const shapeScore = analyzeShapeInRegion(data, x, y, regionSize, width);
                             
-                            if (gray[index] === 255) { // Píxel blanco
-                                whitePixels++;
-                                
-                                // Verificar patrón L específico
-                                if (isInLPattern(x, y, regionWidth, regionHeight)) {
-                                    lPattern++;
-                                }
+                            if (shapeScore > 0.3) {
+                                detections.push({
+                                    x: x,
+                                    y: y,
+                                    width: regionSize,
+                                    height: regionSize,
+                                    confidence: shapeScore,
+                                    method: 'contrast'
+                                });
                             }
                         }
                     }
                 }
                 
-                const density = whitePixels / totalPixels;
-                const lRatio = lPattern / whitePixels;
-                
-                // Criterios para forma L
-                const isLShape = density > 0.3 && density < 0.7 && lRatio > 0.6;
-                const confidence = (density * 0.5 + lRatio * 0.5);
-                
-                return { isLShape, confidence };
+                return detections;
             }
             
-            // Verificar si el píxel está en patrón L
-            function isInLPattern(x, y, width, height) {
-                const centerX = width / 2;
-                const centerY = height / 2;
+            // Método 2: Detección por bordes
+            function detectByEdges(imageData) {
+                const detections = [];
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
                 
-                // Forma L: parte vertical (izquierda) y horizontal (abajo)
-                const inVertical = x < centerX && y > centerY * 0.3;
-                const inHorizontal = y > centerY && x < centerX * 1.7;
+                // Simplificado: buscar cambios bruscos de intensidad
+                const step = 20;
+                const regionSize = 70;
                 
-                return inVertical || inHorizontal;
+                for (let y = 0; y < height - regionSize; y += step) {
+                    for (let x = 0; x < width - regionSize; x += step) {
+                        const edgeScore = calculateEdgeScore(data, x, y, regionSize, width);
+                        
+                        if (edgeScore > 0.4) {
+                            detections.push({
+                                x: x,
+                                y: y,
+                                width: regionSize,
+                                height: regionSize,
+                                confidence: edgeScore,
+                                method: 'edges'
+                            });
+                        }
+                    }
+                }
+                
+                return detections;
             }
             
-            // Filtrar detecciones superpuestas
-            function filterOverlapping(detections) {
+            // Método 3: Detección de forma L mejorada
+            function detectLShapeImproved(imageData) {
+                const detections = [];
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                // Buscar patrones más específicos
+                const sizes = [50, 70, 90, 120]; // Múltiples tamaños
+                
+                sizes.forEach(size => {
+                    const step = Math.max(10, size / 4);
+                    
+                    for (let y = 0; y < height - size; y += step) {
+                        for (let x = 0; x < width - size; x += step) {
+                            const lScore = analyzeLPattern(data, x, y, size, width);
+                            
+                            if (lScore > 0.35) {
+                                detections.push({
+                                    x: x,
+                                    y: y,
+                                    width: size,
+                                    height: size,
+                                    confidence: lScore,
+                                    method: 'L_pattern'
+                                });
+                            }
+                        }
+                    }
+                });
+                
+                return detections;
+            }
+            
+            // Calcular contraste en región
+            function calculateContrast(data, startX, startY, size, width) {
+                let minIntensity = 255;
+                let maxIntensity = 0;
+                
+                for (let y = 0; y < size; y += 3) {
+                    for (let x = 0; x < size; x += 3) {
+                        const index = ((startY + y) * width + (startX + x)) * 4;
+                        const intensity = (data[index] + data[index + 1] + data[index + 2]) / 3;
+                        
+                        minIntensity = Math.min(minIntensity, intensity);
+                        maxIntensity = Math.max(maxIntensity, intensity);
+                    }
+                }
+                
+                return maxIntensity - minIntensity;
+            }
+            
+            // Analizar forma en región
+            function analyzeShapeInRegion(data, startX, startY, size, width) {
+                let whitePixels = 0;
+                let blackPixels = 0;
+                let totalPixels = 0;
+                
+                for (let y = 0; y < size; y += 2) {
+                    for (let x = 0; x < size; x += 2) {
+                        const index = ((startY + y) * width + (startX + x)) * 4;
+                        const intensity = (data[index] + data[index + 1] + data[index + 2]) / 3;
+                        
+                        totalPixels++;
+                        if (intensity > 200) whitePixels++;
+                        else if (intensity < 50) blackPixels++;
+                    }
+                }
+                
+                const ratio = Math.max(whitePixels, blackPixels) / totalPixels;
+                return ratio > 0.3 && ratio < 0.8 ? ratio : 0;
+            }
+            
+            // Calcular puntuación de bordes
+            function calculateEdgeScore(data, startX, startY, size, width) {
+                let edgeStrength = 0;
+                let edgeCount = 0;
+                
+                for (let y = 1; y < size - 1; y += 3) {
+                    for (let x = 1; x < size - 1; x += 3) {
+                        const centerIndex = ((startY + y) * width + (startX + x)) * 4;
+                        const rightIndex = ((startY + y) * width + (startX + x + 1)) * 4;
+                        const bottomIndex = ((startY + y + 1) * width + (startX + x)) * 4;
+                        
+                        const centerIntensity = (data[centerIndex] + data[centerIndex + 1] + data[centerIndex + 2]) / 3;
+                        const rightIntensity = (data[rightIndex] + data[rightIndex + 1] + data[rightIndex + 2]) / 3;
+                        const bottomIntensity = (data[bottomIndex] + data[bottomIndex + 1] + data[bottomIndex + 2]) / 3;
+                        
+                        const gradientX = Math.abs(centerIntensity - rightIntensity);
+                        const gradientY = Math.abs(centerIntensity - bottomIntensity);
+                        const gradient = Math.sqrt(gradientX * gradientX + gradientY * gradientY);
+                        
+                        if (gradient > 30) {
+                            edgeStrength += gradient;
+                            edgeCount++;
+                        }
+                    }
+                }
+                
+                return edgeCount > 5 ? (edgeStrength / edgeCount) / 255 : 0;
+            }
+            
+            // Analizar patrón L específico
+            function analyzeLPattern(data, startX, startY, size, width) {
+                const third = size / 3;
+                let lRegionPixels = 0;
+                let nonLRegionPixels = 0;
+                
+                for (let y = 0; y < size; y += 2) {
+                    for (let x = 0; x < size; x += 2) {
+                        const index = ((startY + y) * width + (startX + x)) * 4;
+                        const intensity = (data[index] + data[index + 1] + data[index + 2]) / 3;
+                        const isWhite = intensity > 180;
+                        
+                        // Verificar si está en región L (parte vertical izquierda + horizontal inferior)
+                        const inVertical = x < third && y > third;
+                        const inHorizontal = y > third * 2 && x < third * 2;
+                        const inLRegion = inVertical || inHorizontal;
+                        
+                        if (inLRegion && isWhite) {
+                            lRegionPixels++;
+                        } else if (!inLRegion && !isWhite) {
+                            nonLRegionPixels++;
+                        }
+                    }
+                }
+                
+                const totalExpected = (size * size) / 8; // Estimación
+                const lScore = (lRegionPixels + nonLRegionPixels) / totalExpected;
+                
+                return Math.min(1.0, lScore);
+            }
+            
+            // Filtrar y combinar detecciones de múltiples métodos
+            function filterAndMergeDetections(detections) {
                 const filtered = [];
-                const minDistance = 60;
+                const minDistance = 50;
                 
+                // Ordenar por confianza
                 detections.sort((a, b) => b.confidence - a.confidence);
                 
                 for (const detection of detections) {
-                    let isOverlapping = false;
+                    let shouldAdd = true;
                     
                     for (const existing of filtered) {
                         const distance = Math.sqrt(
@@ -261,17 +394,155 @@
                         );
                         
                         if (distance < minDistance) {
-                            isOverlapping = true;
+                            // Si está muy cerca, combinar información
+                            if (detection.confidence > existing.confidence) {
+                                existing.x = detection.x;
+                                existing.y = detection.y;
+                                existing.confidence = detection.confidence;
+                            }
+                            shouldAdd = false;
                             break;
                         }
                     }
                     
-                    if (!isOverlapping && detection.confidence > 0.4) {
+                    if (shouldAdd && detection.confidence > 0.3) {
                         filtered.push(detection);
                     }
                 }
                 
-                return filtered.slice(0, 3); // Máximo 3 detecciones
+                return filtered.slice(0, 3);
+            }
+            
+            // Sistema de tracking con suavizado
+            function updateTracking(newDetections) {
+                const currentTime = Date.now();
+                const maxAge = 1000; // 1 segundo sin ver la forma
+                const maxDistance = 80; // Distancia máxima para asociar
+                
+                // Marcar formas existentes como no vistas
+                trackedShapes.forEach(shape => {
+                    shape.seen = false;
+                });
+                
+                // Procesar nuevas detecciones
+                newDetections.forEach(detection => {
+                    let bestMatch = null;
+                    let bestDistance = Infinity;
+                    
+                    // Buscar la forma rastreada más cercana
+                    trackedShapes.forEach((shape, id) => {
+                        const distance = Math.sqrt(
+                            Math.pow(shape.x - detection.x, 2) + 
+                            Math.pow(shape.y - detection.y, 2)
+                        );
+                        
+                        if (distance < maxDistance && distance < bestDistance) {
+                            bestDistance = distance;
+                            bestMatch = id;
+                        }
+                    });
+                    
+                    if (bestMatch) {
+                        // Actualizar forma existente con suavizado
+                        const shape = trackedShapes.get(bestMatch);
+                        const smooth = 0.7; // Factor de suavizado
+                        
+                        shape.x = shape.x * (1 - smooth) + detection.x * smooth;
+                        shape.y = shape.y * (1 - smooth) + detection.y * smooth;
+                        shape.width = shape.width * (1 - smooth) + detection.width * smooth;
+                        shape.height = shape.height * (1 - smooth) + detection.height * smooth;
+                        shape.confidence = Math.max(shape.confidence * 0.9, detection.confidence);
+                        shape.lastSeen = currentTime;
+                        shape.seen = true;
+                        shape.frameCount++;
+                    } else {
+                        // Nueva forma detectada
+                        const id = `shape_${shapeIdCounter++}`;
+                        trackedShapes.set(id, {
+                            id: id,
+                            x: detection.x,
+                            y: detection.y,
+                            width: detection.width,
+                            height: detection.height,
+                            confidence: detection.confidence,
+                            firstSeen: currentTime,
+                            lastSeen: currentTime,
+                            seen: true,
+                            frameCount: 1
+                        });
+                    }
+                });
+                
+                // Remover formas perdidas
+                const toRemove = [];
+                trackedShapes.forEach((shape, id) => {
+                    if (!shape.seen && (currentTime - shape.lastSeen) > maxAge) {
+                        toRemove.push(id);
+                    }
+                });
+                
+                toRemove.forEach(id => trackedShapes.delete(id));
+            }
+            
+            // Mostrar formas rastreadas
+            function displayTrackedShapes() {
+                trackedShapes.forEach(shape => {
+                    // Solo mostrar formas estables (vistas al menos 3 frames)
+                    if (shape.frameCount >= 3 && shape.confidence > 0.25) {
+                        showTrackedShapeAt(shape);
+                    }
+                });
+            }
+            
+            // Mostrar forma rastreada con seguimiento suave
+            function showTrackedShapeAt(shape) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = rect.width / canvas.width;
+                const scaleY = rect.height / canvas.height;
+                
+                // Borde de detección que sigue la forma
+                const border = document.createElement('div');
+                border.style.position = 'absolute';
+                border.style.left = (shape.x * scaleX) + 'px';
+                border.style.top = (shape.y * scaleY) + 'px';
+                border.style.width = (shape.width * scaleX) + 'px';
+                border.style.height = (shape.height * scaleY) + 'px';
+                border.style.border = '3px solid #2ecc71';
+                border.style.borderRadius = '6px';
+                border.style.zIndex = '5';
+                border.style.animation = 'pulse 1.5s infinite';
+                border.style.transition = 'all 0.1s ease-out';
+                
+                // Texto que sigue la forma suavemente
+                const card = document.createElement('div');
+                const cardX = (shape.x + shape.width + 15) * scaleX;
+                const cardY = shape.y * scaleY;
+                
+                card.style.position = 'absolute';
+                card.style.left = Math.min(cardX, window.innerWidth - 140) + 'px';
+                card.style.top = Math.max(10, cardY) + 'px';
+                card.style.background = 'rgba(46, 204, 113, 0.95)';
+                card.style.color = 'white';
+                card.style.padding = '10px 14px';
+                card.style.borderRadius = '8px';
+                card.style.fontFamily = 'Arial, sans-serif';
+                card.style.fontSize = '14px';
+                card.style.zIndex = '10';
+                card.style.boxShadow = '0 3px 10px rgba(0,0,0,0.4)';
+                card.style.whiteSpace = 'nowrap';
+                card.style.transition = 'all 0.1s ease-out';
+                
+                card.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 2px;">
+                        👋 Hola
+                    </div>
+                    <div style="font-size: 11px; opacity: 0.9;">
+                        DAyE 2025 Expo
+                    </div>
+                `;
+                
+                arOverlay.appendChild(border);
+                arOverlay.appendChild(card);
             }
             
             // Iniciar AR
