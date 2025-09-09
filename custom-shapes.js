@@ -11,21 +11,23 @@ class CustomShapeManager {
         // Formato: nombre, emoji, color, información
         
         this.customShapes = {
-            // Ejemplo de formas personalizadas:
-            /*
-            "mi_forma": {
-                name: "Mi Forma",
-                emoji: "⭐", 
-                color: "#ff6b6b",
-                info: "Información personalizada sobre mi forma"
+            // Forma L personalizada del usuario
+            "forma_L_usuario": {
+                name: "Forma L",
+                emoji: "📐", 
+                color: "#e74c3c",
+                text: "¡Mi forma L detectada!"
             },
-            "logo_empresa": {
-                name: "Logo Empresa",
-                emoji: "🏢",
-                color: "#4ecdc4", 
-                info: "Logo de mi empresa detectado"
+            // Imagen Hola.jpg del usuario
+            "hola_imagen": {
+                name: "Hola Image",
+                emoji: "👋",
+                color: "#2ecc71",
+                text: "Hola",
+                subtitle: "DAyE 2025 Expo",
+                imageFile: "Hola.jpg",
+                sensitivity: 0.8
             }
-            */
         };
         
         console.log('Formas personalizadas cargadas:', Object.keys(this.customShapes).length);
