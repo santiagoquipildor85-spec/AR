@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Códigos QR AR</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .generator-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px 10px 0;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5a67d8;
+        }
+
+        .barcode-display {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px dashed #667eea;
+        }
+
+        .barcode-info {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .codes-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .codes-table th,
+        .codes-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .codes-table th {
+            background: #667eea;
+            color: white;
+        }
+
+        .codes-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .preview-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .code-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+        }
+
+        .code-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            margin-bottom: 20px;
+        }
+
+        .back-btn:hover {
+            background: #5a6268;
+        }
+
+        #barcodeResult {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .download-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .alert {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="back-btn" onclick="window.location.href='index.html'">← Volver al Inicio</button>
+        
+        <h1>🔧 Generador de Códigos QR AR</h1>
+
+        <!-- Sección del Generador -->
+        <div class="generator-section">
+            <h2>📊 Crear Nuevo Código QR</h2>
+            
+            <div class="control-group">
+                <label for="codeType">Tipo de Código:</label>
+                <select id="codeType" onchange="updateCodePreview()">
+                    <option value="QR1">QR1 (Recomendado)</option>
+                    <option value="QR2">QR2 (Recomendado)</option>
+                    <option value="QR3">QR3 (Recomendado)</option>
+                    <option value="QR4">QR4 (Recomendado)</option>
+                    <option value="QR5">QR5 (Recomendado)</option>
+                    <option value="QR6">QR6 (Recomendado)</option>
+                    <option value="1">1 (Simple)</option>
+                    <option value="2">2 (Simple)</option>
+                    <option value="3">3 (Simple)</option>
+                    <option value="4">4 (Simple)</option>
+                    <option value="5">5 (Simple)</option>
+                    <option value="6">6 (Simple)</option>
+                    <option value="custom">Personalizado</option>
+                </select>
+            </div>
+
+            <div class="control-group" id="customCodeGroup" style="display: none;">
+                <label for="customCode">Código Personalizado:</label>
+                <input type="text" id="customCode" placeholder="Ej: EVENTO2025" />
+            </div>
+
+            <div class="control-group">
+                <label for="messageText">Mensaje a Mostrar en AR:</label>
+                <textarea id="messageText" rows="3" placeholder="Escribe aquí el mensaje que aparecerá en AR...">👋 ¡Hola!\nBienvenido a DAyE 2025 Expo</textarea>
+            </div>
+
+            <button onclick="generateQR()">🔄 Generar Código QR</button>
+            <button onclick="downloadQR()">📥 Descargar Imagen</button>
+
+            <div class="barcode-display" id="qrContainer">
+                <p>👆 Selecciona un tipo y haz clic en "Generar Código QR"</p>
+            </div>
+
+            <div id="barcodeInfo" class="barcode-info" style="display: none;">
+                <strong>📋 Información del Código:</strong>
+                <div id="infoText"></div>
+            </div>
+        </div>
+
+        <!-- Tabla de Códigos Configurados -->
+        <div class="generator-section">
+            <h2>📋 Códigos Configurados Actualmente</h2>
+            <div class="alert">
+                <strong>💡 Tip:</strong> Estos son los códigos que están configurados en tu aplicación AR. Puedes generar códigos de barras para estos valores o agregar nuevos.
+            </div>
+            
+            <table class="codes-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Mensaje</th>
+                        <th>Emoji</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>QR1</td>
+                        <td>👋 ¡Hola! Bienvenido a DAyE 2025 Expo</td>
+                        <td>👋</td>
+                        <td><button onclick="generateSpecificCode('QR1')">Generar</button></td>
+                    </tr>
+                    <tr>
+                        <td>QR2</td>
+                        <td>🚀 Innovación en Tecnología</td>
+                        <td>🚀</td>
+                        <td><button onclick="generateSpecificCode('QR2')">Generar</button></td>
+                    </tr>
+                    <tr>
+                        <td>QR3</td>
+                        <td>🎯 Realidad Aumentada en Acción</td>
+                        <td>🎯</td>
+                        <td><button onclick="generateSpecificCode('QR3')">Generar</button></td>
+                    </tr>
+                    <tr>
+                        <td>QR4</td>
+                        <td>💡 El Futuro Es Ahora</td>
+                        <td>💡</td>
+                        <td><button onclick="generateSpecificCode('QR4')">Generar</button></td>
+                    </tr>
+                    <tr>
+                        <td>QR5</td>
+                        <td>🌟 Experiencia Interactiva</td>
+                        <td>🌟</td>
+                        <td><button onclick="generateSpecificCode('QR5')">Generar</button></td>
+                    </tr>
+                    <tr>
+                        <td>QR6</td>
+                        <td>🔮 Magia Digital DAyE 2025</td>
+                        <td>🔮</td>
+                        <td><button onclick="generateSpecificCode('QR6')">Generar</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Vista Previa de Códigos -->
+        <div class="generator-section">
+            <h2>👀 Vista Previa de Todos los Códigos</h2>
+            <button onclick="generateAllCodes()">🎯 Generar Todos los Códigos</button>
+            <div class="preview-section" id="previewSection">
+                <!-- Los códigos generados aparecerán aquí -->
+            </div>
+        </div>
+
+        <!-- Instrucciones -->
+        <div class="generator-section">
+            <h2>📖 Instrucciones de Uso</h2>
+            <ol>
+                <li><strong>Generar código:</strong> Selecciona un número del 1-99 y escribe tu mensaje</li>
+                <li><strong>Descargar:</strong> Haz clic en "Descargar Imagen" para guardar el código</li>
+                <li><strong>Imprimir:</strong> Imprime el código en papel o muéstralo en pantalla</li>
+                <li><strong>Escanear:</strong> Usa la aplicación AR para detectar el código</li>
+                <li><strong>Configurar:</strong> Si usas un código nuevo, actualiza ar-barcode.html</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Bibliotecas necesarias -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+    <script src="https://unpkg.com/qrious@4.0.2/dist/qrious.min.js"></script>
+    
+    <script>
+        let currentQR = null;
+
+        // Configuración de mensajes
+        const configuredMessages = {
+            'QR1': "👋 ¡Hola!\nBienvenido a DAyE 2025 Expo",
+            'QR2': "🚀 Innovación\nen Tecnología",
+            'QR3': "🎯 Realidad Aumentada\nen Acción",
+            'QR4': "💡 El Futuro\nEs Ahora",
+            'QR5': "🌟 Experiencia\nInteractiva",
+            'QR6': "🔮 Magia Digital\nDAyE 2025",
+            '1': "👋 ¡Hola!\nBienvenido a DAyE 2025 Expo",
+            '2': "🚀 Innovación\nen Tecnología",
+            '3': "🎯 Realidad Aumentada\nen Acción",
+            '4': "💡 El Futuro\nEs Ahora",
+            '5': "🌟 Experiencia\nInteractiva",
+            '6': "🔮 Magia Digital\nDAyE 2025"
+        };
+
+        function updateCodePreview() {
+            const codeType = document.getElementById('codeType').value;
+            const customGroup = document.getElementById('customCodeGroup');
+            const messageText = document.getElementById('messageText');
+            
+            if (codeType === 'custom') {
+                customGroup.style.display = 'block';
+                messageText.value = '';
+            } else {
+                customGroup.style.display = 'none';
+                messageText.value = configuredMessages[codeType] || '';
+            }
+        }
+
+        function generateQR() {
+            const codeType = document.getElementById('codeType').value;
+            const customCode = document.getElementById('customCode').value;
+            const messageText = document.getElementById('messageText').value;
+
+            let qrText = codeType;
+            if (codeType === 'custom') {
+                if (!customCode.trim()) {
+                    alert('Por favor, ingresa un código personalizado');
+                    return;
+                }
+                qrText = customCode.trim();
+            }
+
+            if (!messageText.trim()) {
+                alert('Por favor, ingresa un mensaje');
+                return;
+            }
+
+            try {
+                // Crear código QR usando QRious
+                const qr = new QRious({
+                    value: qrText,
+                    size: 300,
+                    level: 'M',
+                    background: '#ffffff',
+                    foreground: '#000000'
+                });
+
+                // Obtener el canvas generado
+                const canvas = qr.canvas;
+
+                // Mostrar en el contenedor
+                const container = document.getElementById('qrContainer');
+                container.innerHTML = '';
+                container.appendChild(canvas);
+
+                // Mostrar información
+                const infoDiv = document.getElementById('barcodeInfo');
+                const infoText = document.getElementById('infoText');
+                infoText.innerHTML = `
+                    <p><strong>Código QR:</strong> ${qrText}</p>
+                    <p><strong>Mensaje AR:</strong> ${messageText}</p>
+                    <p><strong>Formato:</strong> QR Code (Compatible con ZXing)</p>
+                    <p><strong>Tamaño:</strong> 300x300px</p>
+                `;
+                infoDiv.style.display = 'block';
+
+                currentQR = canvas;
+
+            } catch (error) {
+                alert('Error al generar el código QR: ' + error.message);
+                console.error('Error:', error);
+            }
+        }
+
+        function generateSpecificCode(code) {
+            document.getElementById('codeType').value = code;
+            updateCodePreview();
+            generateQR();
+        }
+
+        function downloadQR() {
+            if (!currentQR) {
+                alert('Primero genera un código QR');
+                return;
+            }
+
+            const codeType = document.getElementById('codeType').value;
+            const customCode = document.getElementById('customCode').value;
+            const filename = codeType === 'custom' ? customCode : codeType;
+
+            const link = document.createElement('a');
+            link.download = `codigo-qr-${filename}.png`;
+            link.href = currentQR.toDataURL();
+            link.click();
+        }
+
+        function generateAllCodes() {
+            const previewSection = document.getElementById('previewSection');
+            previewSection.innerHTML = '';
+
+            const codesToGenerate = ['QR1', 'QR2', 'QR3', 'QR4', 'QR5', 'QR6'];
+
+            codesToGenerate.forEach((code) => {
+                const card = document.createElement('div');
+                card.className = 'code-card';
+                
+                try {
+                    // Crear código QR usando QRious
+                    const qr = new QRious({
+                        value: code,
+                        size: 200,
+                        level: 'M',
+                        background: '#ffffff',
+                        foreground: '#000000'
+                    });
+
+                    const canvas = qr.canvas;
+
+                    card.innerHTML = `
+                        <h3>Código ${code}</h3>
+                        <div style="margin: 15px 0;">${canvas.outerHTML}</div>
+                        <p><strong>Mensaje:</strong><br>${configuredMessages[code]}</p>
+                        <button onclick="downloadSpecificCode('${code}', '${canvas.toDataURL()}')">📥 Descargar</button>
+                    `;
+
+                    previewSection.appendChild(card);
+                } catch (error) {
+                    console.error('Error generando código:', code, error);
+                }
+            });
+        }
+
+        function downloadSpecificCode(code, dataURL) {
+            const link = document.createElement('a');
+            link.download = `codigo-qr-${code}.png`;
+            link.href = dataURL;
+            link.click();
+        }
+
+        // Generar código QR1 por defecto al cargar
+        window.addEventListener('load', function() {
+            updateCodePreview();
+            generateSpecificCode('QR1');
+        });
+    </script>
+</body>
+</html>
