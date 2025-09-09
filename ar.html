@@ -10,6 +10,12 @@
     <meta name="theme-color" content="#764ba2">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+    </style>
 </head>
 <body class="ar-body">
     <div class="ar-container-fullscreen">
@@ -77,36 +83,46 @@
                 }
             }
             
-            // Mostrar detección de prueba
-            function showDetection() {
+            // Mostrar detección en posición específica
+            function showDetectionAt(x, y, width, height) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = rect.width / canvas.width;
+                const scaleY = rect.height / canvas.height;
+                
+                // Borde de detección
+                const border = document.createElement('div');
+                border.style.position = 'absolute';
+                border.style.left = (x * scaleX) + 'px';
+                border.style.top = (y * scaleY) + 'px';
+                border.style.width = (width * scaleX) + 'px';
+                border.style.height = (height * scaleY) + 'px';
+                border.style.border = '3px solid #2ecc71';
+                border.style.borderRadius = '4px';
+                border.style.zIndex = '5';
+                border.style.animation = 'pulse 1s infinite';
+                
+                // Texto flotante
                 const card = document.createElement('div');
                 card.style.position = 'absolute';
-                card.style.left = '50%';
-                card.style.top = '30%';
-                card.style.transform = 'translateX(-50%)';
+                card.style.left = ((x + width + 10) * scaleX) + 'px';
+                card.style.top = (y * scaleY) + 'px';
                 card.style.background = 'rgba(46, 204, 113, 0.9)';
                 card.style.color = 'white';
-                card.style.padding = '12px 16px';
-                card.style.borderRadius = '8px';
+                card.style.padding = '8px 12px';
+                card.style.borderRadius = '6px';
                 card.style.fontFamily = 'Arial, sans-serif';
+                card.style.fontSize = '14px';
                 card.style.zIndex = '10';
-                card.style.textAlign = 'center';
-                card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+                card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+                card.style.whiteSpace = 'nowrap';
                 
-                card.innerHTML = '<div style="font-weight: bold; margin-bottom: 2px;">👋 Hola</div><div style="font-size: 12px;">DAyE 2025 Expo</div>';
+                card.innerHTML = '<div style="font-weight: bold; margin-bottom: 2px;">👋 Hola</div><div style="font-size: 11px; opacity: 0.9;">DAyE 2025 Expo</div>';
                 
+                arOverlay.appendChild(border);
                 arOverlay.appendChild(card);
-                
-                setTimeout(function() {
-                    if (card.parentNode) {
-                        card.parentNode.removeChild(card);
-                    }
-                }, 3000);
-                
-                updateStatus('¡Detectado!', 'detecting');
             }
             
-            // Loop de detección
+            // Loop de detección real
             function detectLoop() {
                 if (!isRunning) return;
                 
@@ -114,9 +130,21 @@
                     if (video.videoWidth > 0) {
                         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                         
-                        // Simulación de detección cada 5 segundos aprox
-                        if (Math.random() > 0.995) {
-                            showDetection();
+                        // Detectar forma L real
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const detections = detectLShape(imageData);
+                        
+                        // Limpiar detecciones anteriores
+                        clearOverlay();
+                        
+                        // Mostrar detecciones encontradas
+                        if (detections.length > 0) {
+                            detections.forEach(detection => {
+                                showDetectionAt(detection.x, detection.y, detection.width, detection.height);
+                            });
+                            updateStatus('¡Forma L detectada!', 'detecting');
+                        } else {
+                            updateStatus('Buscando forma L...', 'active');
                         }
                     }
                 } catch (error) {
@@ -126,6 +154,124 @@
                 if (isRunning) {
                     animationId = requestAnimationFrame(detectLoop);
                 }
+            }
+            
+            // Detectar forma L específica
+            function detectLShape(imageData) {
+                const detections = [];
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                // Convertir a escala de grises y binarizar
+                const gray = new Uint8Array(width * height);
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    const grayscale = (r + g + b) / 3;
+                    gray[i / 4] = grayscale > 128 ? 255 : 0; // Umbral para blanco/negro
+                }
+                
+                // Buscar regiones blancas (forma L)
+                const step = 20; // Reducir carga computacional
+                for (let y = step; y < height - 100; y += step) {
+                    for (let x = step; x < width - 100; x += step) {
+                        const region = analyzeRegion(gray, width, height, x, y, 80, 80);
+                        if (region.isLShape) {
+                            detections.push({
+                                x: x,
+                                y: y,
+                                width: 80,
+                                height: 80,
+                                confidence: region.confidence
+                            });
+                        }
+                    }
+                }
+                
+                // Filtrar detecciones superpuestas
+                return filterOverlapping(detections);
+            }
+            
+            // Analizar región específica para forma L
+            function analyzeRegion(gray, width, height, startX, startY, regionWidth, regionHeight) {
+                let whitePixels = 0;
+                let totalPixels = 0;
+                let lPattern = 0;
+                
+                // Analizar patrón de la región
+                for (let y = 0; y < regionHeight; y += 4) {
+                    for (let x = 0; x < regionWidth; x += 4) {
+                        const pixelX = startX + x;
+                        const pixelY = startY + y;
+                        
+                        if (pixelX < width && pixelY < height) {
+                            const index = pixelY * width + pixelX;
+                            totalPixels++;
+                            
+                            if (gray[index] === 255) { // Píxel blanco
+                                whitePixels++;
+                                
+                                // Verificar patrón L específico
+                                if (isInLPattern(x, y, regionWidth, regionHeight)) {
+                                    lPattern++;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                const density = whitePixels / totalPixels;
+                const lRatio = lPattern / whitePixels;
+                
+                // Criterios para forma L
+                const isLShape = density > 0.3 && density < 0.7 && lRatio > 0.6;
+                const confidence = (density * 0.5 + lRatio * 0.5);
+                
+                return { isLShape, confidence };
+            }
+            
+            // Verificar si el píxel está en patrón L
+            function isInLPattern(x, y, width, height) {
+                const centerX = width / 2;
+                const centerY = height / 2;
+                
+                // Forma L: parte vertical (izquierda) y horizontal (abajo)
+                const inVertical = x < centerX && y > centerY * 0.3;
+                const inHorizontal = y > centerY && x < centerX * 1.7;
+                
+                return inVertical || inHorizontal;
+            }
+            
+            // Filtrar detecciones superpuestas
+            function filterOverlapping(detections) {
+                const filtered = [];
+                const minDistance = 60;
+                
+                detections.sort((a, b) => b.confidence - a.confidence);
+                
+                for (const detection of detections) {
+                    let isOverlapping = false;
+                    
+                    for (const existing of filtered) {
+                        const distance = Math.sqrt(
+                            Math.pow(detection.x - existing.x, 2) + 
+                            Math.pow(detection.y - existing.y, 2)
+                        );
+                        
+                        if (distance < minDistance) {
+                            isOverlapping = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!isOverlapping && detection.confidence > 0.4) {
+                        filtered.push(detection);
+                    }
+                }
+                
+                return filtered.slice(0, 3); // Máximo 3 detecciones
             }
             
             // Iniciar AR
