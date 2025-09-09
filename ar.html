@@ -56,7 +56,68 @@
         </div>
     </template>
 
+    <!-- Sistema avanzado de detección múltiple -->
     <script src="custom-shapes.js"></script>
-    <script src="ar-detector.js"></script>
+    <script src="advanced-shape-detector.js"></script>
+    <script src="tracking-system.js"></script>
+    <script src="shape-detection-algorithms.js"></script>
+    <script src="image-template-detector.js"></script>
+    <script>
+        // Inicializar sistema avanzado
+        document.addEventListener('DOMContentLoaded', () => {
+            window.advancedDetector = new AdvancedShapeDetector();
+            
+            // Agregar funciones auxiliares
+            window.advancedDetector.updateStatus = function(text, state = 'ready') {
+                const statusText = document.getElementById('statusText');
+                const statusDot = document.querySelector('.status-dot');
+                
+                if (statusText) statusText.textContent = text;
+                if (statusDot) {
+                    statusDot.className = 'status-dot';
+                    if (state === 'active') statusDot.classList.add('active');
+                    if (state === 'detecting') statusDot.classList.add('detecting');
+                }
+            };
+            
+            window.advancedDetector.clearAROverlay = function() {
+                const overlay = document.getElementById('arOverlay');
+                if (overlay) {
+                    while (overlay.firstChild) {
+                        overlay.removeChild(overlay.firstChild);
+                    }
+                }
+            };
+            
+            window.advancedDetector.goBack = function() {
+                if (this.isRunning) this.stopDetection();
+                window.location.href = 'index.html';
+            };
+            
+            window.advancedDetector.stopDetection = function() {
+                this.isRunning = false;
+                
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                    this.stream = null;
+                }
+                
+                if (this.video && this.video.srcObject) {
+                    this.video.srcObject = null;
+                }
+                
+                this.clearAROverlay();
+                this.trackedShapes.clear();
+                this.trackingHistory.clear();
+                
+                this.updateStatus('Toca para iniciar', 'ready');
+                console.log('Detección avanzada detenida');
+            };
+        });
+    </script>
 </body>
 </html>
